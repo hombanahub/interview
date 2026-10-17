@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Interview coding platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f5f6f8;--card:#fff;--ink:#1b2430;--mute:#5d6877;--line:#d8dde5;--acc:#1f5f66;--acc-ink:#fff;--bad:#a8431a;--ok:#1d7a45;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12171d;--card:#1b222b;--ink:#e8ecf1;--mute:#9aa6b4;--line:#2d3743;--acc:#5fb3bb;--acc-ink:#0c1a1c;--bad:#f08c5c;--ok:#5fcf8f;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Atkinson Hyperlegible",system-ui,sans-serif;padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
+header{padding:20px 24px 0;max-width:980px;margin:0 auto}
+h1{font-size:1.5rem;margin:0 0 4px}h2{font-size:1.1rem;margin:0 0 10px}
+p.sub{margin:0 0 14px;color:var(--mute)}
+nav{display:flex;gap:4px;border-bottom:1px solid var(--line);max-width:980px;margin:0 auto;padding:0 24px}
+nav button{background:none;border:0;border-bottom:3px solid transparent;padding:10px 14px;font:inherit;color:var(--mute);cursor:pointer}
+nav button[aria-selected=true]{color:var(--ink);border-color:var(--acc);font-weight:700}
+main{max-width:980px;margin:0 auto;padding:20px 24px 60px}
+section{display:none}section.on{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:16px;margin-bottom:16px}
+label{display:block;font-weight:700;font-size:.9rem;margin:10px 0 4px}
+input,textarea,select{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px}
+textarea{min-height:110px;resize:vertical}
+button.b{font:inherit;background:var(--acc);color:var(--acc-ink);border:0;border-radius:6px;padding:8px 14px;cursor:pointer;margin:10px 8px 0 0}
+button.b.alt{background:none;color:var(--ink);border:1px solid var(--line)}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:640px){.row{grid-template-columns:1fr}}
+.st{margin-top:10px;font-size:.92rem;min-height:1.4em}.st.ok{color:var(--ok)}.st.bad{color:var(--bad)}
+.chip{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:2px 10px;margin:2px 4px 2px 0;font-size:.85rem}
+.chip.ai{border-style:dashed}
+.chip.on{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)}
+.chips label{display:inline;font-weight:400;margin:0}.chips input{width:auto;margin-right:4px}
+.scroll{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:.9rem}th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+.note{font-size:.85rem;color:var(--mute)}
+</style>
+</head>
+<body>
+<header>
+<h1>Interview coding platform</h1>
+<p class="sub">Capture or import interview responses, anonymise them, then code them by hand or with AI. AI output is a suggestion, not a finding.</p>
+</header>
+<nav role="tablist">
+<button role="tab" data-t="setup" aria-selected="true">Setup</button>
+<button role="tab" data-t="interview" aria-selected="false">Interview</button>
+<button role="tab" data-t="results" aria-selected="false">Coded responses</button>
+</nav>
+<main>
+<section id="setup" class="on">
+<div class="card">
+<h2>AI coding</h2>
+<label for="prov">Provider</label>
+<select id="prov"><option value="demo">Demo coder (offline, keyword matching)</option><option value="ep">My own endpoint</option></select>
+<label for="ep">AI endpoint (accepts POST {prompt}, returns {text})</label>
+<input id="ep" placeholder="https://your-function.azurewebsites.net/api/code?code=KEY" autocomplete="off">
+<button class="b" id="testai">Enable &amp; test AI</button>
+<div class="st" id="aist" role="status"></div>
+<p class="note">Only the anonymised response text, the question and the codebook are sent.</p>
+</div>
+<div class="card">
+<h2>Microsoft Graph live transcript</h2>
+<div class="row"><div><label for="ten">Tenant ID</label><input id="ten" value="4b1b908c-5582-4377-ba07-a36d65e34934"></div>
+<div><label for="cli">Application (client) ID</label><input id="cli" placeholder="from your app registration"></div></div>
+<button class="b" id="gsign">Sign in to Microsoft</button>
+<div class="st" id="gst" role="status"></div>
+<p class="note">Needs a single-page-application redirect URI equal to this page's address, and delegated permissions User.Read, OnlineMeetings.Read and OnlineMeetingTranscript.Read.All with admin consent. Host this file (for example on GitHub Pages) so sign-in and CORS work; opening it from disk will not.</p>
+</div>
+<div class="card">
+<h2>Codebook and masking</h2>
+<label for="cb">Codes (one per line)</label>
+<textarea id="cb"></textarea>
+<label for="names">Names to mask (comma separated)</label>
+<input id="names" placeholder="e.g. Thandi, Prof Mokoena, Wits">
+<label for="qs">Interview questions (one per line)</label>
+<textarea id="qs"></textarea>
+<button class="b alt" id="save">Save settings</button>
+</div>
+</section>
+
+<section id="interview">
+<div class="card">
+<label for="qsel">Question</label>
+<select id="qsel"></select>
+<div class="card" style="margin:12px 0 0">
+<h2>Get the response</h2>
+<label for="joinurl">Teams meeting join link (Graph)</label>
+<input id="joinurl" placeholder="https://teams.microsoft.com/l/meetup-join/...">
+<button class="b alt" id="gfetch">Fetch latest transcript</button>
+<label for="file">or import a .vtt / .txt transcript</label>
+<input type="file" id="file" accept=".vtt,.txt">
+<div class="st" id="fst" role="status"></div>
+</div>
+<label for="resp">Response text</label>
+<textarea id="resp" placeholder="Type, paste or import the participant's answer"></textarea>
+<div class="chips" id="manual"></div>
+<button class="b" id="add">Anonymise &amp; add response</button>
+<button class="b alt" id="sample">Load sample answer</button>
+<div class="st" id="ist" role="status"></div>
+</div>
+</section>
+
+<section id="results">
+<div class="card">
+<button class="b" id="recode">Re-code all responses with AI</button>
+<button class="b alt" id="csv">Download CSV</button>
+<button class="b alt" id="clear">Clear responses</button>
+<div class="st" id="rst" role="status"></div>
+<div class="scroll"><table><thead><tr><th>Question</th><th>Anonymised response</th><th>Your codes</th><th>AI suggestion</th></tr></thead><tbody id="rows"></tbody></table></div>
+</div>
+</section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+<script>
+const $=s=>document.querySelector(s);
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const DEF={cb:"Access barriers\nWorkload\nSupport\nMotivation\nTechnology",qs:"What makes studying or teaching harder for you at the moment?\nWhat support has helped you most?\nHow do you use technology in your work?",ep:"",prov:"demo",names:"",cli:""};
+let cfg=Object.assign({},DEF,store.get("cfg",{}));
+let data=store.get("resp",[]);
+let aiOn=false,pca=null,token=null;
+const codes=()=>$("#cb").value.split("\n").map(s=>s.trim()).filter(Boolean);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function status(el,msg,cls){el.textContent=msg;el.className="st "+(cls||"")}
+function init(){["cb","qs","ep","prov","names","cli"].forEach(k=>$("#"+k).value=cfg[k]);
+  fillQ();drawManual();drawRows()}
+function saveCfg(){["cb","qs","ep","prov","names","cli"].forEach(k=>cfg[k]=$("#"+k).value);store.set("cfg",cfg);fillQ();drawManual()}
+function fillQ(){const qs=$("#qs").value.split("\n").map(s=>s.trim()).filter(Boolean);
+  $("#qsel").innerHTML=qs.map((q,i)=>`<option value="${esc(q)}">Q${i+1}. ${esc(q)}</option>`).join("")||'<option value="">General</option>'}
+function drawManual(){$("#manual").innerHTML=codes().map((c,i)=>`<label><input type="checkbox" value="${esc(c)}"> <span class="chip">${esc(c)}</span></label>`).join("")}
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("nav button").forEach(x=>x.setAttribute("aria-selected",x===b));
+  document.querySelectorAll("section").forEach(s=>s.classList.toggle("on",s.id===b.dataset.t))});
+
+/* anonymise */
+function anonymise(t){
+  let out=t.replace(/[\w.+-]+@[\w-]+\.[\w.-]+/g,"[EMAIL]").replace(/(\+?\d[\d\s().-]{7,}\d)/g,"[PHONE]").replace(/https?:\/\/\S+/g,"[LINK]");
+  $("#names").value.split(",").map(s=>s.trim()).filter(Boolean).forEach(n=>{
+    out=out.replace(new RegExp(n.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"gi"),"[NAME]")});
+  return out}
+
+/* coding */
+function demoCode(text){const t=text.toLowerCase();
+  const hints={technology:["laptop","wifi","internet","online","software","app","data","computer","teams"],workload:["workload","busy","hours","deadline","overwhelm","time"],support:["support","help","mentor","supervisor","colleague","peer"],motivation:["motivat","passion","goal","inspire","enjoy"],"access barriers":["cost","fees","afford","transport","access","barrier","connect"]};
+  return codes().filter(c=>{const k=c.toLowerCase();const words=(hints[k]||[]).concat(k.split(/\s+/).filter(w=>w.length>3).map(w=>w.slice(0,5)));return words.some(w=>t.includes(w))})}
+async function callAI(prompt){
+  const r=await fetch($("#ep").value.trim(),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt})});
+  if(!r.ok)throw new Error("HTTP "+r.status);
+  const j=await r.json();return j.text||""}
+function parseCodes(txt){const m=txt.match(/\[[\s\S]*\]/);if(!m)return[];
+  try{const a=JSON.parse(m[0]);const ok=codes().map(c=>c.toLowerCase());return a.filter(x=>typeof x==="string"&&ok.includes(x.toLowerCase()))}catch(e){return[]}}
+async function aiCode(q,text){
+  if($("#prov").value==="demo")return demoCode(text);
+  const p=`You assist a researcher with qualitative coding. Codebook: ${JSON.stringify(codes())}.\nInterview question: ${q}\nParticipant response: ${text}\nReturn ONLY a JSON array of codebook names that apply. Use [] if none.`;
+  return parseCodes(await callAI(p))}
+$("#testai").onclick=async()=>{saveCfg();const el=$("#aist");
+  if($("#prov").value==="demo"){aiOn=true;const r=demoCode("I struggle with wifi and my workload");
+    return status(el,`Demo coder ready. Test sentence returned: ${r.join(", ")||"no codes"}.`,"ok")}
+  if(!$("#ep").value.trim())return status(el,"AI error: Set an AI endpoint first","bad");
+  status(el,"Testing…");
+  try{const t=await callAI('Reply with exactly this JSON and nothing else: {"ok":true}');
+    aiOn=true;status(el,"Endpoint works. It replied: "+t.slice(0,80),"ok")}
+  catch(e){aiOn=false;status(el,"AI error: "+e.message+(e.message.includes("fetch")?". This is usually CORS: add this page's exact origin ("+location.origin+") in the Function App CORS settings.":""),"bad")}};
+$("#save").onclick=()=>{saveCfg();status($("#ist"),"Settings saved.","ok")};
+
+/* responses */
+$("#sample").onclick=()=>{$("#resp").value="My supervisor, Thandi, has been a great support, but my workload is heavy and the wifi at home keeps dropping. Email me at thandi@wits.ac.za or call 011 717 1234."};
+$("#add").onclick=async()=>{const raw=$("#resp").value.trim();if(!raw)return status($("#ist"),"Add a response first.","bad");
+  const mine=[...document.querySelectorAll("#manual input:checked")].map(i=>i.value);
+  const row={q:$("#qsel").value,text:anonymise(raw),codes:mine,ai:null};
+  data.push(row);store.set("resp",data);$("#resp").value="";document.querySelectorAll("#manual input").forEach(i=>i.checked=false);
+  status($("#ist"),"Response added.","ok");drawRows()};
+function drawRows(){$("#rows").innerHTML=data.map(r=>`<tr><td>${esc(r.q)}</td><td>${esc(r.text)}</td><td>${r.codes.map(c=>`<span class="chip on">${esc(c)}</span>`).join("")}</td><td>${r.ai===null?'<span class="note">not run</span>':(r.ai.map(c=>`<span class="chip ai">${esc(c)}</span>`).join("")||'<span class="note">none</span>')}</td></tr>`).join("")||'<tr><td colspan="4" class="note">No responses yet. Add one on the Interview tab.</td></tr>'}
+$("#recode").onclick=async()=>{const el=$("#rst");
+  if(!aiOn&&$("#prov").value!=="demo")return status(el,"AI error: Enable and test the AI endpoint on the Setup tab first.","bad");
+  if(!data.length)return status(el,"No responses to code.","bad");
+  try{for(let i=0;i<data.length;i++){status(el,`Coding ${i+1} of ${data.length}…`);data[i].ai=await aiCode(data[i].q,data[i].text)}
+    store.set("resp",data);drawRows();status(el,"Done. Review every suggestion before using it.","ok")}
+  catch(e){status(el,"AI error: "+e.message,"bad")}};
+$("#clear").onclick=()=>{if(confirm("Remove all responses from this browser?")){data=[];store.set("resp",data);drawRows()}};
+$("#csv").onclick=()=>{const q=s=>'"'+String(s).replace(/"/g,'""')+'"';
+  const csv=["question,response,manual_codes,ai_codes"].concat(data.map(r=>[q(r.q),q(r.text),q(r.codes.join("; ")),q((r.ai||[]).join("; "))].join(","))).join("\n");
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="coded-responses.csv";a.click()};
+
+/* transcripts */
+function vttToText(v){return v.replace(/^WEBVTT.*$/m,"").split("\n").filter(l=>l.trim()&&!/-->/.test(l)&&!/^\d+$/.test(l.trim())).map(l=>l.replace(/<v ([^>]+)>/,"$1: ").replace(/<\/v>/g,"")).join("\n")}
+$("#file").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();
+  r.onload=()=>{$("#resp").value=f.name.endsWith(".vtt")?vttToText(r.result):r.result;status($("#fst"),"Imported "+f.name+". Trim it to the participant's answer, then add it.","ok")};r.readAsText(f)};
+function msalReady(){if(typeof msal==="undefined")throw new Error("Microsoft sign-in library did not load.");
+  if(!$("#cli").value.trim()||!$("#ten").value.trim())throw new Error("Enter the Tenant ID and Client ID first.");
+  pca=new msal.PublicClientApplication({auth:{clientId:$("#cli").value.trim(),authority:"https://login.microsoftonline.com/"+$("#ten").value.trim(),redirectUri:location.origin+location.pathname},cache:{cacheLocation:"sessionStorage"}})}
+const SC=["User.Read","OnlineMeetings.Read","OnlineMeetingTranscript.Read.All"];
+$("#gsign").onclick=async()=>{saveCfg();const el=$("#gst");
+  try{msalReady();status(el,"Opening Microsoft sign-in…");const r=await pca.loginPopup({scopes:SC});token=r;status(el,"Signed in as "+r.account.username+".","ok")}
+  catch(e){status(el,"Graph error: "+(e.errorMessage||e.message)+(/AADSTS65001|consent/i.test(e.message||"")?" Admin consent is missing for a permission.":"")+(/AADSTS50011|redirect/i.test(e.message||"")?" Add this exact redirect URI to the app: "+location.origin+location.pathname:""),"bad")}};
+async function g(path,accept){const t=await pca.acquireTokenSilent({scopes:SC,account:token.account});
+  const r=await fetch("https://graph.microsoft.com/v1.0"+path,{headers:{Authorization:"Bearer "+t.accessToken,Accept:accept||"application/json"}});
+  if(!r.ok)throw new Error("Graph "+r.status+" on "+path.split("?")[0]);return accept?r.text():r.json()}
+$("#gfetch").onclick=async()=>{const el=$("#fst");
+  try{if(!token)throw new Error("Sign in on the Setup tab first.");
+    const url=$("#joinurl").value.trim();if(!url)throw new Error("Paste the Teams join link.");
+    status(el,"Finding meeting…");
+    const m=await g("/me/onlineMeetings?$filter="+encodeURIComponent("JoinWebUrl eq '"+url+"'"));
+    if(!m.value.length)throw new Error("No meeting found for that link. Use an account that organised it.");
+    const id=m.value[0].id;status(el,"Finding transcripts…");
+    const t=await g(`/me/onlineMeetings/${id}/transcripts`);
+    if(!t.value.length)throw new Error("No transcript yet. Transcription must be on, and the meeting ended.");
+    const last=t.value[t.value.length-1];
+    const v=await g(`/me/onlineMeetings/${id}/transcripts/${last.id}/content?$format=text/vtt`,"text/vtt");
+    $("#resp").value=vttToText(v);status(el,"Transcript loaded. Trim it to the participant's answer, then add it.","ok")}
+  catch(e){status(el,"Graph error: "+(e.errorMessage||e.message),"bad")}};
+init();
+</script>
+</body>
+</html>
