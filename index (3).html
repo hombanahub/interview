@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Interview coding platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f5f6f8;--card:#fff;--ink:#1b2430;--mute:#5d6877;--line:#d8dde5;--acc:#1f5f66;--acc-ink:#fff;--bad:#a8431a;--ok:#1d7a45;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12171d;--card:#1b222b;--ink:#e8ecf1;--mute:#9aa6b4;--line:#2d3743;--acc:#5fb3bb;--acc-ink:#0c1a1c;--bad:#f08c5c;--ok:#5fcf8f;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Atkinson Hyperlegible",system-ui,sans-serif;padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
+header{padding:20px 24px 0;max-width:980px;margin:0 auto}
+h1{font-size:1.5rem;margin:0 0 4px}h2{font-size:1.1rem;margin:0 0 10px}
+p.sub{margin:0 0 14px;color:var(--mute)}
+nav{display:flex;gap:4px;border-bottom:1px solid var(--line);max-width:980px;margin:0 auto;padding:0 24px}
+nav button{background:none;border:0;border-bottom:3px solid transparent;padding:10px 14px;font:inherit;color:var(--mute);cursor:pointer}
+nav button[aria-selected=true]{color:var(--ink);border-color:var(--acc);font-weight:700}
+main{max-width:980px;margin:0 auto;padding:20px 24px 60px}
+section{display:none}section.on{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:16px;margin-bottom:16px}
+label{display:block;font-weight:700;font-size:.9rem;margin:10px 0 4px}
+input,textarea,select{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px}
+textarea{min-height:110px;resize:vertical}
+button.b{font:inherit;background:var(--acc);color:var(--acc-ink);border:0;border-radius:6px;padding:8px 14px;cursor:pointer;margin:10px 8px 0 0}
+button.b.alt{background:none;color:var(--ink);border:1px solid var(--line)}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:640px){.row{grid-template-columns:1fr}}
+.st{margin-top:10px;font-size:.92rem;min-height:1.4em}.st.ok{color:var(--ok)}.st.bad{color:var(--bad)}
+.chip{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:2px 10px;margin:2px 4px 2px 0;font-size:.85rem}
+.chip.ai{border-style:dashed}
+.chip.on{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)}
+.chips label{display:inline;font-weight:400;margin:0}.chips input{width:auto;margin-right:4px}
+.scroll{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:.9rem}th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+.note{font-size:.85rem;color:var(--mute)}
+#banner{margin:6px 0 12px;padding:8px 12px;border:1px solid var(--line);border-radius:6px;background:var(--card);font-size:.92rem}
+code.u{word-break:break-all;display:block;padding:8px;background:var(--bg);border:1px solid var(--line);border-radius:6px}
+#diagout div{padding:3px 0}
+</style>
+</head>
+<body>
+<header>
+<h1>Interview coding platform</h1>
+<div id="banner" role="status"></div>
+<p class="sub">Capture or import interview responses, anonymise them, then code them by hand or with AI. AI output is a suggestion, not a finding.</p>
+</header>
+<nav role="tablist">
+<button role="tab" data-t="setup" aria-selected="true">Setup</button>
+<button role="tab" data-t="interview" aria-selected="false">Interview</button>
+<button role="tab" data-t="results" aria-selected="false">Coded responses</button>
+</nav>
+<main>
+<section id="setup" class="on">
+<div class="card">
+<h2>AI coding</h2>
+<label for="prov">Provider</label>
+<select id="prov"><option value="demo">Demo coder (offline, keyword matching)</option><option value="ep">My own endpoint</option></select>
+<label for="ep">AI endpoint (accepts POST {prompt}, returns {text})</label>
+<input id="ep" placeholder="https://your-function.azurewebsites.net/api/code?code=KEY" autocomplete="off">
+<button class="b" id="testai">Enable &amp; test AI</button>
+<div class="st" id="aist" role="status"></div>
+<p class="note">Only the anonymised response text, the question and the codebook are sent.</p>
+</div>
+<div class="card">
+<h2>Microsoft Graph live transcript</h2>
+<div class="row"><div><label for="ten">Tenant ID</label><input id="ten" value="4b1b908c-5582-4377-ba07-a36d65e34934"></div>
+<div><label for="cli">Application (client) ID</label><input id="cli" placeholder="from your app registration"></div></div>
+<button class="b" id="gsign">Sign in to Microsoft</button>
+<div class="st" id="gst" role="status"></div>
+<p class="note">Needs a single-page-application redirect URI equal to this page's address, and delegated permissions User.Read, OnlineMeetings.Read and OnlineMeetingTranscript.Read.All with admin consent. Host this file (for example on GitHub Pages) so sign-in and CORS work; opening it from disk will not.</p>
+</div>
+<div class="card">
+<h2>Redirect URI and troubleshooting</h2>
+<p class="note">Register this exact value in Entra: your app, Authentication, Add a platform, Single-page application.</p>
+<code class="u" id="ruri"></code>
+<button class="b alt" id="rcopy">Copy redirect URI</button>
+<div class="st bad" id="rwarn" role="alert"></div>
+<button class="b" id="diag">Run checks</button>
+<div id="diagout" role="status"></div>
+<label for="errtxt">Paste a Microsoft error message (AADSTS...)</label>
+<textarea id="errtxt" style="min-height:70px"></textarea>
+<button class="b alt" id="decode">Explain this error</button>
+<div class="st" id="decout" role="status"></div>
+</div>
+<div class="card">
+<h2>Licence, notifications and admin</h2>
+<p class="note">Free use: 5 responses, offline demo coder, no report. Paid use: US$2.50 per day with a licence token: your own AI endpoint, unlimited responses and the full analysis report.</p>
+<label for="lic">Licence token</label><input id="lic" autocomplete="off">
+<label for="licUrl">Licence endpoint</label><input id="licUrl" placeholder="https://your-app.azurewebsites.net/api/licence-verify">
+<label for="notify">Usage notification endpoint</label><input id="notify" placeholder="https://your-app.azurewebsites.net/api/ping">
+<button class="b" id="licgo">Activate token</button>
+<label style="font-weight:400"><input type="checkbox" id="dev" style="width:auto"> Developer test mode (owner only; ignores limits on this browser)</label>
+<div class="st" id="licst" role="status"></div>
+</div>
+<div class="card">
+<h2>Codebook and masking</h2>
+<label for="cb">Codes (one per line)</label>
+<textarea id="cb"></textarea>
+<label for="names">Names to mask (comma separated)</label>
+<input id="names" placeholder="e.g. Thandi, Prof Mokoena, Wits">
+<label for="qs">Interview questions (one per line)</label>
+<textarea id="qs"></textarea>
+<button class="b alt" id="save">Save settings</button>
+</div>
+</section>
+
+<section id="interview">
+<div class="card">
+<h2>Audio interview</h2>
+<p class="note">Reads each question aloud, listens, transcribes as the participant speaks, and suggests codes live. Pause, or say "next question", to move on. Press Escape to stop. Works best in Chrome, Edge or Safari with the microphone allowed.</p>
+<div class="row"><div><label for="rate">Speech speed</label><select id="rate"><option value="0.8">Slow</option><option value="1" selected>Normal</option><option value="1.2">Fast</option></select></div>
+<div><label for="silence">Pause before moving on</label><select id="silence"><option value="4">4 seconds</option><option value="6" selected>6 seconds</option><option value="10">10 seconds</option></select></div></div>
+<button class="b" id="astart">Start audio interview</button><button class="b alt" id="astop">Stop</button>
+<div class="st" id="alive" aria-live="polite"></div>
+<div id="live" class="note"></div><div id="lcodes" class="chips"></div>
+</div>
+<div class="card">
+<label for="qsel">Question</label>
+<select id="qsel"></select>
+<div class="card" style="margin:12px 0 0">
+<h2>Get the response</h2>
+<label for="joinurl">Teams meeting join link (Graph)</label>
+<input id="joinurl" placeholder="https://teams.microsoft.com/l/meetup-join/...">
+<button class="b alt" id="gfetch">Fetch latest transcript</button>
+<label for="file">or import a .vtt / .txt transcript</label>
+<input type="file" id="file" accept=".vtt,.txt">
+<div class="st" id="fst" role="status"></div>
+</div>
+<label for="resp">Response text</label>
+<textarea id="resp" placeholder="Type, paste or import the participant's answer"></textarea>
+<div class="chips" id="manual"></div>
+<button class="b" id="add">Anonymise &amp; add response</button>
+<button class="b alt" id="sample">Load sample answer</button>
+<div class="st" id="ist" role="status"></div>
+</div>
+</section>
+
+<section id="results">
+<div class="card">
+<button class="b" id="recode">Re-code all responses with AI</button>
+<button class="b alt" id="csv">Download CSV</button>
+<button class="b" id="report">Download full analysis report</button>
+<button class="b alt" id="clear">Clear responses</button>
+<div class="st" id="rst" role="status"></div>
+<div class="scroll"><table><thead><tr><th>Question</th><th>Anonymised response</th><th>Your codes</th><th>AI suggestion</th></tr></thead><tbody id="rows"></tbody></table></div>
+</div>
+</section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+<script>
+const $=s=>document.querySelector(s);
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const DEF={cb:"Access barriers\nWorkload\nSupport\nMotivation\nTechnology",qs:"What makes studying or teaching harder for you at the moment?\nWhat support has helped you most?\nHow do you use technology in your work?",ep:"",prov:"demo",names:"",cli:"42d564e0-1a9c-4181-9236-bceb9a540a2f",lic:"",licUrl:"",notify:""};
+let cfg=Object.assign({},DEF,store.get("cfg",{}));
+let data=store.get("resp",[]);
+let aiOn=false,pca=null,token=null;
+const codes=()=>$("#cb").value.split("\n").map(s=>s.trim()).filter(Boolean);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function status(el,msg,cls){el.textContent=msg;el.className="st "+(cls||"")}
+function init(){["cb","qs","ep","prov","names","cli","lic","licUrl","notify"].forEach(k=>$("#"+k).value=cfg[k]||DEF[k]);
+  fillQ();drawManual();drawRows()}
+function saveCfg(){["cb","qs","ep","prov","names","cli","lic","licUrl","notify"].forEach(k=>cfg[k]=$("#"+k).value);store.set("cfg",cfg);fillQ();drawManual()}
+function fillQ(){const qs=$("#qs").value.split("\n").map(s=>s.trim()).filter(Boolean);
+  $("#qsel").innerHTML=qs.map((q,i)=>`<option value="${esc(q)}">Q${i+1}. ${esc(q)}</option>`).join("")||'<option value="">General</option>'}
+function drawManual(){$("#manual").innerHTML=codes().map((c,i)=>`<label><input type="checkbox" value="${esc(c)}"> <span class="chip">${esc(c)}</span></label>`).join("")}
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("nav button").forEach(x=>x.setAttribute("aria-selected",x===b));
+  document.querySelectorAll("section").forEach(s=>s.classList.toggle("on",s.id===b.dataset.t))});
+
+/* anonymise */
+function anonymise(t){
+  let out=t.replace(/[\w.+-]+@[\w-]+\.[\w.-]+/g,"[EMAIL]").replace(/(\+?\d[\d\s().-]{7,}\d)/g,"[PHONE]").replace(/https?:\/\/\S+/g,"[LINK]");
+  $("#names").value.split(",").map(s=>s.trim()).filter(Boolean).forEach(n=>{
+    out=out.replace(new RegExp(n.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"gi"),"[NAME]")});
+  return out}
+
+/* coding */
+function demoCode(text){const t=text.toLowerCase();
+  const hints={technology:["laptop","wifi","internet","online","software","app","data","computer","teams"],workload:["workload","busy","hours","deadline","overwhelm","time"],support:["support","help","mentor","supervisor","colleague","peer"],motivation:["motivat","passion","goal","inspire","enjoy"],"access barriers":["cost","fees","afford","transport","access","barrier","connect"]};
+  return codes().filter(c=>{const k=c.toLowerCase();const words=(hints[k]||[]).concat(k.split(/\s+/).filter(w=>w.length>3).map(w=>w.slice(0,5)));return words.some(w=>t.includes(w))})}
+async function callAI(prompt){
+  const r=await fetch($("#ep").value.trim(),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt,token:$("#lic").value.trim()})});
+  if(!r.ok)throw new Error("HTTP "+r.status);
+  const j=await r.json();return j.text||""}
+function parseCodes(txt){const m=txt.match(/\[[\s\S]*\]/);if(!m)return[];
+  try{const a=JSON.parse(m[0]);const ok=codes().map(c=>c.toLowerCase());return a.filter(x=>typeof x==="string"&&ok.includes(x.toLowerCase()))}catch(e){return[]}}
+async function aiCode(q,text){
+  if($("#prov").value==="demo")return demoCode(text);
+  if(state().tier!=="paid")throw new Error("Your own AI endpoint is part of paid use. Activate a licence token, or use the demo coder.");
+  const p=`You assist a researcher with qualitative coding. Codebook: ${JSON.stringify(codes())}.\nInterview question: ${q}\nParticipant response: ${text}\nReturn ONLY a JSON array of codebook names that apply. Use [] if none.`;
+  return parseCodes(await callAI(p))}
+$("#testai").onclick=async()=>{saveCfg();const el=$("#aist");
+  if($("#prov").value==="demo"){aiOn=true;const r=demoCode("I struggle with wifi and my workload");
+    return status(el,`Demo coder ready. Test sentence returned: ${r.join(", ")||"no codes"}.`,"ok")}
+  if(!$("#ep").value.trim())return status(el,"AI error: Set an AI endpoint first","bad");
+  status(el,"Testing…");
+  try{const t=await callAI('Reply with exactly this JSON and nothing else: {"ok":true}');
+    aiOn=true;status(el,"Endpoint works. It replied: "+t.slice(0,80),"ok")}
+  catch(e){aiOn=false;status(el,"AI error: "+e.message+(e.message.includes("fetch")?". This is usually CORS: add this page's exact origin ("+location.origin+") in the Function App CORS settings.":""),"bad")}};
+$("#save").onclick=()=>{saveCfg();status($("#ist"),"Settings saved.","ok")};
+
+/* responses */
+$("#sample").onclick=()=>{$("#resp").value="My supervisor, Thandi, has been a great support, but my workload is heavy and the wifi at home keeps dropping. Email me at thandi@wits.ac.za or call 011 717 1234."};
+function addResp(q,raw,mine,ai){const st=state();
+  if(st.locked||st.readOnly)throw new Error(st.locked?st.why:"Your licence has expired. Download your report; no new responses can be added.");
+  if(st.tier==="free"&&data.length>=FREE_MAX)throw new Error("Free use is limited to "+FREE_MAX+" responses. Activate a licence token to continue.");
+  data.push({q,text:anonymise(raw),codes:mine||[],ai:ai||null});store.set("resp",data);drawRows();banner();ping("response_added")}
+$("#add").onclick=()=>{const raw=$("#resp").value.trim();if(!raw)return status($("#ist"),"Add a response first.","bad");
+  const mine=[...document.querySelectorAll("#manual input:checked")].map(i=>i.value);
+  try{addResp($("#qsel").value,raw,mine);$("#resp").value="";document.querySelectorAll("#manual input").forEach(i=>i.checked=false);status($("#ist"),"Response added.","ok")}
+  catch(e){status($("#ist"),e.message,"bad")}};
+function drawRows(){$("#rows").innerHTML=data.map(r=>`<tr><td>${esc(r.q)}</td><td>${esc(r.text)}</td><td>${r.codes.map(c=>`<span class="chip on">${esc(c)}</span>`).join("")}</td><td>${r.ai===null?'<span class="note">not run</span>':(r.ai.map(c=>`<span class="chip ai">${esc(c)}</span>`).join("")||'<span class="note">none</span>')}</td></tr>`).join("")||'<tr><td colspan="4" class="note">No responses yet. Add one on the Interview tab.</td></tr>'}
+$("#recode").onclick=async()=>{const el=$("#rst");
+  if(!aiOn&&$("#prov").value!=="demo")return status(el,"AI error: Enable and test the AI endpoint on the Setup tab first.","bad");
+  if(!data.length)return status(el,"No responses to code.","bad");
+  try{for(let i=0;i<data.length;i++){status(el,`Coding ${i+1} of ${data.length}…`);data[i].ai=await aiCode(data[i].q,data[i].text)}
+    store.set("resp",data);drawRows();status(el,"Done. Review every suggestion before using it.","ok")}
+  catch(e){status(el,"AI error: "+e.message,"bad")}};
+$("#clear").onclick=()=>{if(confirm("Remove all responses from this browser?")){data=[];store.set("resp",data);drawRows()}};
+$("#csv").onclick=()=>{const q=s=>'"'+String(s).replace(/"/g,'""')+'"';
+  const csv=["question,response,manual_codes,ai_codes"].concat(data.map(r=>[q(r.q),q(r.text),q(r.codes.join("; ")),q((r.ai||[]).join("; "))].join(","))).join("\n");
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="coded-responses.csv";a.click()};
+
+/* transcripts */
+function vttToText(v){return v.replace(/^WEBVTT.*$/m,"").split("\n").filter(l=>l.trim()&&!/-->/.test(l)&&!/^\d+$/.test(l.trim())).map(l=>l.replace(/<v ([^>]+)>/,"$1: ").replace(/<\/v>/g,"")).join("\n")}
+$("#file").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();
+  r.onload=()=>{$("#resp").value=f.name.endsWith(".vtt")?vttToText(r.result):r.result;status($("#fst"),"Imported "+f.name+". Trim it to the participant's answer, then add it.","ok")};r.readAsText(f)};
+function msalReady(){if(!redirectUri())throw new Error("AADSTS900971: this page was opened from disk, so it has no redirect URI. Open it from https or http://localhost.");if(typeof msal==="undefined")throw new Error("Microsoft sign-in library did not load.");
+  if(!$("#cli").value.trim()||!$("#ten").value.trim())throw new Error("Enter the Tenant ID and Client ID first.");
+  pca=new msal.PublicClientApplication({auth:{clientId:$("#cli").value.trim(),authority:"https://login.microsoftonline.com/"+$("#ten").value.trim(),redirectUri:redirectUri()},cache:{cacheLocation:"sessionStorage"}})}
+const SC=["User.Read","OnlineMeetings.Read","OnlineMeetingTranscript.Read.All"];
+$("#gsign").onclick=async()=>{saveCfg();const el=$("#gst");
+  try{msalReady();status(el,"Opening Microsoft sign-in…");const r=await pca.loginPopup({scopes:SC});token=r;status(el,"Signed in as "+r.account.username+".","ok");ping("signin")}
+  catch(e){autoDiag(e);status(el,"Graph error: "+(e.errorMessage||e.message)+(/AADSTS65001|consent/i.test(e.message||"")?" Admin consent is missing for a permission.":"")+(/AADSTS50011|redirect/i.test(e.message||"")?" Add this exact redirect URI to the app: "+location.origin+location.pathname:""),"bad")}};
+async function g(path,accept){const t=await pca.acquireTokenSilent({scopes:SC,account:token.account});
+  const r=await fetch("https://graph.microsoft.com/v1.0"+path,{headers:{Authorization:"Bearer "+t.accessToken,Accept:accept||"application/json"}});
+  if(!r.ok)throw new Error("Graph "+r.status+" on "+path.split("?")[0]);return accept?r.text():r.json()}
+$("#gfetch").onclick=async()=>{const el=$("#fst");
+  try{if(!token)throw new Error("Sign in on the Setup tab first.");
+    const url=$("#joinurl").value.trim();if(!url)throw new Error("Paste the Teams join link.");
+    status(el,"Finding meeting…");
+    const m=await g("/me/onlineMeetings?$filter="+encodeURIComponent("JoinWebUrl eq '"+url+"'"));
+    if(!m.value.length)throw new Error("No meeting found for that link. Use an account that organised it.");
+    const id=m.value[0].id;status(el,"Finding transcripts…");
+    const t=await g(`/me/onlineMeetings/${id}/transcripts`);
+    if(!t.value.length)throw new Error("No transcript yet. Transcription must be on, and the meeting ended.");
+    const last=t.value[t.value.length-1];
+    const v=await g(`/me/onlineMeetings/${id}/transcripts/${last.id}/content?$format=text/vtt`,"text/vtt");
+    $("#resp").value=vttToText(v);status(el,"Transcript loaded. Trim it to the participant's answer, then add it.","ok")}
+  catch(e){status(el,"Graph error: "+(e.errorMessage||e.message),"bad")}};
+/* ---- licence, tiers, notifications ---- */
+const FREE_MAX=5,GRACE=3*864e5;
+function redirectUri(){return /^https?:$/.test(location.protocol)?location.origin+location.pathname:null}
+function devMode(){return !!store.get("dev",false)||/^(localhost|127\.0\.0\.1)$/.test(location.hostname)}
+function state(){const now=Date.now();
+  if(devMode())return{tier:"paid",locked:false,label:"Developer/local test mode: no limits"};
+  const l=store.get("lic",null);
+  if(l&&l.valid){
+    if(now>l.exp+GRACE||(l.dl&&now>l.exp))return{tier:"free",locked:true,why:"Your licence has ended and the download window has closed. Activate a new token to continue.",label:"Licence ended: access locked"};
+    if(now>l.exp)return{tier:"paid",locked:false,readOnly:true,label:"Licence expired. Download your report within "+Math.ceil((l.exp+GRACE-now)/864e5)+" day(s); then access locks and local data is erased."};
+    return{tier:"paid",locked:false,label:"Paid licence "+l.id+": "+Math.ceil((l.exp-now)/864e5)+" day(s) left, ends "+new Date(l.exp).toLocaleDateString()}}
+  return{tier:"free",locked:false,label:"Free use: "+data.length+" of "+FREE_MAX+" responses, demo coder only. Paid use is US$2.50 per day."}}
+function banner(){let st=state();
+  if(st.locked&&data.length){data=[];store.set("resp",data);drawRows()}
+  $("#banner").textContent=st.label;
+  ["astart","add","recode","report"].forEach(id=>{const el=$("#"+id);if(el)el.disabled=!!st.locked})}
+function ping(ev){const u=$("#notify").value.trim();if(!u)return;
+  const l=store.get("lic",null);
+  try{fetch(u,{method:"POST",keepalive:true,headers:{"Content-Type":"application/json"},body:JSON.stringify({event:ev,licence:l?l.id:"free",ts:new Date().toISOString(),page:location.host})}).catch(()=>{})}catch(e){}}
+$("#dev").checked=!!store.get("dev",false);
+$("#dev").onchange=()=>{store.set("dev",$("#dev").checked);banner()};
+$("#licgo").onclick=async()=>{saveCfg();const t=$("#lic").value.trim(),el=$("#licst");
+  if(!t)return status(el,"Paste a licence token first.","bad");
+  if(!$("#licUrl").value.trim())return status(el,"Set the licence endpoint first.","bad");
+  status(el,"Checking token…");
+  try{const r=await fetch($("#licUrl").value.trim(),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token:t})});
+    const j=await r.json();if(!j.valid)return status(el,"Token not valid: "+(j.reason||"unknown"),"bad");
+    const prev=store.get("lic",null);store.set("lic",{valid:true,exp:j.exp,id:j.id,dl:prev&&prev.id===j.id?prev.dl:null});
+    status(el,"Activated. "+state().label,"ok");banner();ping("licence_activated")}
+  catch(e){status(el,"Licence error: "+e.message+" (check the endpoint and CORS).","bad")}};
+
+/* ---- analysis report ---- */
+function buildReport(){const cnt=(f)=>{const m={};data.forEach(r=>(r[f]||[]).forEach(c=>m[c]=(m[c]||0)+1));return m};
+  const man=cnt("codes"),ai=cnt("ai"),all=[...new Set(codes().concat(Object.keys(man),Object.keys(ai)))];
+  const qs=[...new Set(data.map(r=>r.q))];
+  const fr=all.map(c=>`<tr><td>${esc(c)}</td><td>${man[c]||0}</td><td>${ai[c]||0}</td></tr>`).join("");
+  const byq=qs.map(q=>{const rs=data.filter(r=>r.q===q);const m={};rs.forEach(r=>r.codes.concat(r.ai||[]).forEach(c=>m[c]=(m[c]||0)+1));
+    return `<h3>${esc(q)}</h3><p>${rs.length} response(s). Top codes: ${Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,3).map(e=>esc(e[0])+" ("+e[1]+")").join(", ")||"none"}</p>`}).join("");
+  const rows=data.map((r,i)=>`<tr><td>${i+1}</td><td>${esc(r.q)}</td><td>${esc(r.text)}</td><td>${esc(r.codes.join("; "))}</td><td>${esc((r.ai||[]).join("; "))}</td></tr>`).join("");
+  return `<!DOCTYPE html><html lang="en"><meta charset="utf-8"><title>Interview analysis report</title><style>body{font:16px/1.5 system-ui,sans-serif;max-width:900px;margin:2em auto;padding:0 1em}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccc;padding:6px;text-align:left;vertical-align:top}</style><h1>Interview analysis report</h1><p>Generated ${new Date().toLocaleString()}. ${data.length} anonymised response(s).</p><h2>Code frequencies</h2><table><tr><th>Code</th><th>Researcher</th><th>AI suggestion</th></tr>${fr}</table><h2>By question</h2>${byq}<h2>All responses</h2><table><tr><th>#</th><th>Question</th><th>Response</th><th>Researcher codes</th><th>AI suggested codes</th></tr>${rows}</table><p><em>AI codes are suggestions for the researcher to review, not findings. Responses were anonymised automatically; check them before sharing.</em></p></html>`}
+$("#report").onclick=()=>{const st=state(),el=$("#rst");
+  if(st.tier!=="paid")return status(el,"The full analysis report is part of paid use.","bad");
+  if(!data.length)return status(el,"No responses to report on.","bad");
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([buildReport()],{type:"text/html"}));a.download="interview-analysis-report.html";a.click();
+  const l=store.get("lic",null);if(l){l.dl=Date.now();store.set("lic",l)}
+  status(el,"Report downloaded. Keep it safe: access ends when your licence period and download window close.","ok");banner();ping("report_downloaded")};
+
+/* ---- redirect URI, diagnostics, error decoder ---- */
+const AAD={"900971":"No reply address. The page was opened from disk or has no redirect URI. Open it from https or http://localhost and register that exact address as a Single-page application URI.",
+"50011":"Redirect URI mismatch. Copy the URI shown above into Entra, Authentication, Single-page application. Match case, path and any trailing slash exactly.",
+"65001":"Consent missing. Add the delegated permissions, then a tenant admin must grant consent. Without that, test with transcripts imported from a file, or use a free personal test tenant you own.",
+"700016":"Client ID not found in this tenant. Check the client ID and tenant ID belong to the same app registration.",
+"90002":"Tenant not found. Check the tenant ID.","90013":"Tenant ID is not valid.",
+"50020":"This account is not allowed by the app. A single-tenant app only accepts users from its own tenant.",
+"50194":"Single-tenant app used with a multi-tenant endpoint. This page uses your tenant ID as authority, so re-check the tenant ID.",
+"9002326":"Token redemption must be cross-origin. Move the redirect URI from Web to Single-page application.",
+"700025":"App is a public client. Register it as Single-page application and use no client secret.",
+"7000218":"App registered as Web, so a secret is demanded. Add the Single-page application platform and remove the Web one.",
+"650056":"App permissions not configured. Add the delegated Graph permissions under API permissions.",
+"53003":"Conditional Access blocked sign-in. Only the tenant admin can change that. Use a personal test tenant, or import transcripts as files.",
+"65004":"The user declined consent.","50105":"The signed-in user is not assigned to the app (assignment required).","500011":"Graph service principal missing in the tenant. A tenant admin must fix this; test in a personal tenant meanwhile."};
+function decodeAAD(t){const m=String(t).match(/AADSTS(\d+)/);if(!m)return"No AADSTS code found. Paste the full message from the Microsoft error page.";
+  return "AADSTS"+m[1]+": "+(AAD[m[1]]||"Not in my list. Search the code at https://login.microsoftonline.com/error?code="+m[1]+" for Microsoft's own explanation.")}
+function autoDiag(e){const t=(e&&(e.errorMessage||e.message))||String(e);$("#errtxt").value=t;$("#decout").textContent=decodeAAD(t)}
+$("#decode").onclick=()=>{$("#decout").textContent=decodeAAD($("#errtxt").value)};
+function showUri(){const u=redirectUri();$("#ruri").textContent=u||"(none: this page was opened from disk)";
+  $("#rwarn").textContent=u?"":"Warning: this page is open from a file on your computer. Microsoft sign-in will fail with AADSTS900971. Open it from your hosted https address, or serve it locally (python3 -m http.server 8080) and open http://localhost:8080/interview-platform.html."}
+$("#rcopy").onclick=async()=>{try{await navigator.clipboard.writeText(redirectUri()||"");status($("#decout"),"Copied.","ok")}catch(e){status($("#decout"),"Select and copy the address manually.","bad")}};
+function jwt(t){try{const p=t.split(".")[1].replace(/-/g,"+").replace(/_/g,"/");return JSON.parse(atob(p+"=".repeat((4-p.length%4)%4)))}catch(e){return null}}
+$("#diag").onclick=async()=>{const out=$("#diagout");out.innerHTML="";
+  const add=(k,m)=>{const d=document.createElement("div");d.textContent={ok:"✔ ",bad:"✘ ",warn:"! "}[k]+m;d.style.color=k==="ok"?"var(--ok)":k==="bad"?"var(--bad)":"var(--mute)";out.appendChild(d)};
+  const G=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,ten=$("#ten").value.trim(),cli=$("#cli").value.trim();
+  redirectUri()?add("ok","Redirect URI: "+redirectUri()):add("bad","Page opened from disk: no redirect URI (AADSTS900971).");
+  if(location.protocol==="http:"&&!/localhost|127\.0\.0\.1/.test(location.hostname))add("bad","Plain http is only accepted by Microsoft for localhost. Use https.");
+  G.test(ten)?add("ok","Tenant ID format is valid."):add("bad","Tenant ID is not a valid GUID.");
+  G.test(cli)?add("ok","Client ID format is valid."):add("bad","Client ID is not a valid GUID.");
+  typeof msal!=="undefined"?add("ok","Microsoft sign-in library loaded."):add("bad","Microsoft sign-in library did not load (blocked network?).");
+  if(G.test(ten)){try{const r=await fetch("https://login.microsoftonline.com/"+ten+"/v2.0/.well-known/openid-configuration");r.ok?add("ok","Tenant exists and is reachable."):add("bad","Microsoft says this tenant does not exist (HTTP "+r.status+").")}catch(e){add("warn","Could not reach Microsoft to check the tenant (offline or blocked).")}}
+  if(token){const c=jwt(token.accessToken);if(c){const have=(c.scp||"").split(" ");SC.forEach(x=>have.includes(x)?add("ok","Permission granted: "+x):add("bad","Permission missing: "+x+" (needs consent)."))}
+    try{await g("/me");add("ok","Microsoft Graph /me call works.")}catch(e){add("bad","Graph call failed: "+e.message)}}
+  else add("warn","Not signed in yet: permission checks run after you sign in.");
+  const eu=$("#ep").value.trim();if(eu){try{const r=await fetch(eu,{method:"OPTIONS"});add(r.status<500?"ok":"bad","AI endpoint reachable (HTTP "+r.status+").")}catch(e){add("bad","AI endpoint blocked: usually CORS. Add origin "+location.origin+" in the Function App CORS settings.")}}
+  const lu=$("#licUrl").value.trim();if(lu){try{await fetch(lu,{method:"OPTIONS"});add("ok","Licence endpoint reachable.")}catch(e){add("bad","Licence endpoint blocked: check CORS.")}}};
+
+/* ---- audio interview ---- */
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+const au={run:false,rec:null};
+function speak(t){return new Promise(r=>{if(!window.speechSynthesis||typeof SpeechSynthesisUtterance==="undefined")return r();
+  const u=new SpeechSynthesisUtterance(t);u.lang="en-ZA";u.rate=+$("#rate").value;u.onend=r;u.onerror=r;speechSynthesis.cancel();speechSynthesis.speak(u)})}
+function liveCodes(t){$("#lcodes").innerHTML=demoCode(t).map(c=>`<span class="chip on">${esc(c)}</span>`).join("")}
+function listen(){return new Promise(res=>{const rec=new SR();rec.lang="en-ZA";rec.continuous=true;rec.interimResults=true;let fin="",timer,heard="";au.rec=rec;
+  const stop=()=>{clearTimeout(timer);try{rec.stop()}catch(e){}};
+  const arm=()=>{clearTimeout(timer);timer=setTimeout(stop,+$("#silence").value*1000)};
+  rec.onresult=e=>{let it="";for(let i=e.resultIndex;i<e.results.length;i++){const t=e.results[i][0].transcript;e.results[i].isFinal?fin+=t+" ":it+=t}
+    heard=fin+it;$("#live").textContent=heard;liveCodes(heard);arm();if(/\b(next question|that'?s all)\W*$/i.test(heard))stop()};
+  rec.onerror=e=>{au.err=e.error;stop()};rec.onend=()=>{clearTimeout(timer);res((fin||heard).trim())};
+  rec.start();arm()})}
+async function runAudio(){const al=$("#alive");
+  if(!SR)return status(al,"Speech recognition is not supported in this browser. Use Chrome, Edge or Safari.","bad");
+  const st=state();if(st.locked||st.readOnly)return status(al,st.why||"Your licence has expired.","bad");
+  const qs=$("#qs").value.split("\n").map(s=>s.trim()).filter(Boolean);if(!qs.length)return status(al,"Add interview questions on the Setup tab.","bad");
+  au.run=true;au.err=null;ping("audio_interview_started");
+  await speak("Welcome. I will read each question aloud. Speak your answer after each question. Pause, or say next question, when you are done.");
+  for(let i=0;i<qs.length&&au.run;i++){
+    status(al,"Question "+(i+1)+" of "+qs.length);$("#live").textContent="";$("#lcodes").innerHTML="";
+    await speak("Question "+(i+1)+". "+qs[i]);if(!au.run)break;
+    status(al,"Listening… (question "+(i+1)+")");
+    let text=await listen();text=text.replace(/\b(next question|that'?s all)\W*$/i,"").trim();if(!au.run)break;
+    if(au.err==="not-allowed"){status(al,"Microphone access was blocked. Allow the microphone and try again.","bad");au.run=false;break}
+    if(!text){await speak("I did not hear an answer. Moving on.");continue}
+    let ai=null;try{ai=await aiCode(qs[i],text)}catch(e){ai=null}
+    try{addResp(qs[i],text,[],ai)}catch(e){status(al,e.message,"bad");au.run=false;await speak(e.message);break}
+    await speak("Thank you. Answer saved."+(ai&&ai.length?" Themes noticed: "+ai.join(", ")+".":""))}
+  if(au.run)await speak("The interview is finished. Thank you.");
+  au.run=false;status(al,"Audio interview ended. Review the responses on the Coded responses tab.","ok")}
+function stopAudio(){au.run=false;try{au.rec&&au.rec.stop()}catch(e){}if(window.speechSynthesis)speechSynthesis.cancel();status($("#alive"),"Stopped.")}
+$("#astart").onclick=runAudio;$("#astop").onclick=stopAudio;
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&au.run)stopAudio()});
+init();showUri();banner();ping("app_opened");
+</script>
+</body>
+</html>
